@@ -1,0 +1,31 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            //Change program to match name
+            "name": "Odin Launch (Windows)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/out/Debug/futhark_fighter.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/out/Debug",
+            "environment": [],
+            "preLaunchTask": "debug"
+        },
+        {
+            "name": "Odin Launch (Linux)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/out/Debug/futhark_fighter",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/out/Debug",
+            "environment": [],
+            "preLaunchTask": "debug"
+        }
+    ]
+}
