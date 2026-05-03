@@ -49,11 +49,11 @@ _music: k2.Sound
 _font: k2.Font
 _player: Player
 _enemies: [10]Enemy
-_score: int
+_score := 0
 _wave := 1
 _level := 0
 _bonus_runes: bit_set[Rune] = {.F, .U, .A, .R, .K}
-
+_game_over: bool
 
 init :: proc() {
 	k2.init(SCR_W, SCR_H, TITLE)
@@ -83,7 +83,7 @@ init :: proc() {
 
 	for &enemy in _enemies {
 		rn := rand.choice_enum(Rune)
-		enemy_init(&enemy, rn)
+		enemy_init(&enemy, rn, rand.int_max(2) == 1)
 	}
 
 	_enemies[0].active = true
@@ -93,6 +93,12 @@ init :: proc() {
 	k2.set_sound_loop(_music, true)
 	k2.play_sound(_music)
 
+}
+
+reset_game :: proc() {
+	_score = 0
+	_wave = 1
+	_level = 0
 }
 
 input :: proc() {
