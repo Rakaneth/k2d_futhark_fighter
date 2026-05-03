@@ -4,7 +4,7 @@ Param(
 
 $dbg = "./out/Debug"
 $rls = "./out/Release"
-$exe = "masterstower.exe"
+$exe = "futhark_fighter.exe"
 $renderer = "-define:KARL2D_RENDER_BACKEND=gl"
 $size = "-o:size"
 
