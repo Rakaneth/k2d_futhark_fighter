@@ -53,9 +53,9 @@ _font: k2.Font
 _player: Player
 _enemies: [10]Enemy
 _score := 0
-_wave := 1
+_diff := 1
 _level := 0
-_bonus_runes: bit_set[Rune] = {.F, .U, .A, .R, .K}
+_bonus_runes: bit_set[Rune] = {}
 _game_over: bool
 _timers: hm.Dynamic_Handle_Map(Timer, Timer_Handle)
 
@@ -95,7 +95,7 @@ init :: proc() {
 
 reset_game :: proc() {
 	_score = 0
-	_wave = 1
+	_diff = 1
 	_level = 0
 }
 
@@ -110,6 +110,18 @@ input :: proc() {
 		}
 		if math.abs(axis.y) < GAMEPAD_DEADZONE {
 			axis.y = 0
+		}
+		if k2.gamepad_button_is_held(0, .Left_Face_Up) {
+			axis.y += -1
+		}
+		if k2.gamepad_button_is_held(0, .Left_Face_Down) {
+			axis.y -= -1
+		}
+		if k2.gamepad_button_is_held(0, .Left_Face_Left) {
+			axis.x -= 1
+		}
+		if k2.gamepad_button_is_held(0, .Left_Face_Right) {
+			axis.x += 1
 		}
 	} else {
 		if k2.key_is_held(.A) {
@@ -204,7 +216,7 @@ draw_hud :: proc() {
 	k2.draw_rect({0, 0, SCR_W, 32}, {192, 192, 192, 255})
 	score_text := fmt.tprintf("%06d", _score)
 	level_text := fmt.tprintf("LV:%02d", _level)
-	wave_text := fmt.tprintf("W:%02d", _wave)
+	wave_text := fmt.tprintf("D:%02d", _diff)
 
 	k2.draw_text(score_text, {0, 0}, 32, k2.BLACK, _font)
 	k2.draw_text(level_text, {7 * 32, 0}, 32, k2.BLACK, _font)
