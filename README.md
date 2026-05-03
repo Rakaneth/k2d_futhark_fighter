@@ -1,5 +1,5 @@
 # Futhark Fighter!
-* Spell FUTHARK by shooting the runes flying at your ship to score and level up!
+* Spell FUTHARK by shooting the runes flying at your ship to score and level up (represented by the L: value)!
 * Spelling FUTHARK powers up the ship, making it fire and shoot faster.
 * Enemies spawn and move faster as the game goes on (represented by the D: value)
 
