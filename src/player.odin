@@ -2,8 +2,8 @@ package main
 
 import k2 "../vendor/karl2d"
 
-FRAME_CD :: 2
-
+FRAME_CD :: 15
+PLAYER_START_SPD :: 6
 
 Player :: struct {
 	pos:         k2.Vec2,
@@ -16,7 +16,7 @@ Player :: struct {
 player_init :: proc(player: ^Player) {
 	player.frame = 0
 	player.dir = {}
-	player.spd = 4 //in tile units
+	player.spd = PLAYER_START_SPD //in tile units
 	player.frame_timer = 0
 }
 

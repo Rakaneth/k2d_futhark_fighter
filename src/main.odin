@@ -18,7 +18,7 @@ LEFT_EDGE := f32(-WORLD_W / 2)
 @(rodata)
 RIGHT_EDGE := f32(WORLD_W / 2)
 @(rodata)
-TOP_EDGE := f32(-WORLD_H / 2)
+TOP_EDGE := f32(-WORLD_H / 2) + 8.0
 @(rodata)
 BOT_EDGE := f32(WORLD_H / 2)
 GAMEPAD_DEADZONE :: 0.4
@@ -60,6 +60,8 @@ init :: proc() {
 
 	player_init(&_player)
 
+	k2.set_sound_loop(_music, true)
+	k2.play_sound(_music)
 
 }
 
