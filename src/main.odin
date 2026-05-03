@@ -57,6 +57,7 @@ _diff := 1
 _bonus_runes: bit_set[Rune] = {}
 _game_over: bool
 _timers: hm.Dynamic_Handle_Map(Timer, Timer_Handle)
+_debug_mode := false
 
 init :: proc() {
 	k2.init(SCR_W, SCR_H, TITLE)
@@ -146,6 +147,10 @@ input :: proc() {
 	if k2.key_went_down(.Space) || k2.gamepad_button_went_down(0, .Right_Face_Down) {
 		player_shoot(&_player)
 	}
+
+	if k2.key_went_down(.Backtick) {
+		_debug_mode = !_debug_mode
+	}
 }
 
 add_timer :: proc(duration: f32, fn: proc(), infinite := false, num_loops := 1) -> Timer_Handle {
@@ -189,6 +194,17 @@ update :: proc() {
 	}
 	for &bullet in _player.bullet_pool {
 		bullet_update(&bullet, dt)
+		if bullet.active {
+			bhb := bullet_hitbox(bullet)
+			for &enemy in _enemies {
+				if enemy.active && k2.rect_overlapping(bhb, enemy_hitbox(enemy)) {
+					enemy.active = false
+					bullet.active = false
+					k2.play_sound(_explode_sound)
+					_score += 10 * _diff
+				}
+			}
+		}
 	}
 }
 
@@ -196,6 +212,9 @@ draw_player :: proc() {
 	src := _frames[_player.frame]
 	dest := player_hitbox(_player)
 	k2.draw_texture_fit(_tex, src, dest)
+	if _debug_mode {
+		k2.draw_rect_outline(dest, 1, k2.WHITE)
+	}
 }
 
 draw_enemies :: proc() {
@@ -206,6 +225,9 @@ draw_enemies :: proc() {
 		src := _frames[enemy.frame]
 		dest := enemy_hitbox(enemy)
 		k2.draw_texture_fit(_tex, src, dest)
+		if _debug_mode {
+			k2.draw_rect_outline(dest, 1, k2.WHITE)
+		}
 	}
 }
 
@@ -217,6 +239,10 @@ draw_bullets :: proc() {
 		src := _frames[2]
 		dest := k2.Rect{bullet.pos.x, bullet.pos.y, GAME_UNIT, GAME_UNIT}
 		k2.draw_texture_fit(_tex, src, dest)
+		if _debug_mode {
+			hb := bullet_hitbox(bullet)
+			k2.draw_rect_outline(hb, 1, k2.WHITE)
+		}
 	}
 }
 
