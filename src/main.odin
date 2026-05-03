@@ -103,8 +103,26 @@ reset_game :: proc() {
 	_score = 0
 	_diff = 1
 	_player.level = 0
+	_game_over = false
+	it := hm.iterator_make(&_timers)
+	_bonus_runes = {}
 
 	player_init(&_player)
+
+	for &enemy in _enemies {
+		enemy = {}
+	}
+
+	for &bullet in _player.bullet_pool {
+		bullet = {}
+	}
+
+	spawn_enemy()
+
+	for timer, handle in hm.iterate(&it) {
+		timer_reset(timer)
+		timer_start(timer)
+	}
 }
 
 increase_diff :: proc() {
@@ -164,6 +182,12 @@ input :: proc() {
 	if k2.key_went_down(.Backtick) {
 		_debug_mode = !_debug_mode
 	}
+
+	if _game_over {
+		if k2.key_went_down(.Escape) || k2.gamepad_button_went_down(0, .Right_Face_Right) {
+			reset_game()
+		}
+	}
 }
 
 add_timer :: proc(duration: f32, fn: proc(), infinite := false, num_loops := 1) -> Timer_Handle {
@@ -206,16 +230,7 @@ spawn_enemy :: proc() {
 	}
 }
 
-update :: proc() {
-	dt := k2.get_frame_time()
-	it := hm.iterator_make(&_timers)
-	for timer, handle in hm.iterate(&it) {
-		timer_update(timer, dt)
-	}
-	player_update(&_player, dt)
-	for &enemy in _enemies {
-		enemy_update(&enemy, dt)
-	}
+update_bullets :: proc(dt: f32) {
 	for &bullet in _player.bullet_pool {
 		bullet_update(&bullet, dt)
 		if bullet.active {
@@ -232,6 +247,36 @@ update :: proc() {
 			}
 		}
 	}
+}
+
+update_enemies :: proc(dt: f32) {
+	for &enemy in _enemies {
+		enemy_update(&enemy, dt)
+		if enemy.active {
+			ehb := enemy_hitbox(enemy)
+			if k2.rect_overlapping(ehb, player_hitbox(_player)) {
+				k2.play_sound(_game_over_sound)
+				_game_over = true
+				break
+			}
+		}
+	}
+}
+
+update :: proc() {
+	if _game_over {
+		return
+	}
+	dt := k2.get_frame_time()
+	it := hm.iterator_make(&_timers)
+	for timer, handle in hm.iterate(&it) {
+		timer_update(timer, dt)
+	}
+	player_update(&_player, dt)
+
+	update_bullets(dt)
+	update_enemies(dt)
+
 }
 
 draw_player :: proc() {
@@ -282,19 +327,26 @@ draw_game :: proc() {
 draw_hud :: proc() {
 	k2.set_camera(nil)
 	k2.draw_rect({0, 0, SCR_W, 32}, {192, 192, 192, 255})
-	score_text := fmt.tprintf("%06d", _score)
-	level_text := fmt.tprintf("LV:%02d", _player.level)
-	wave_text := fmt.tprintf("D:%02d", _diff)
+	if _game_over {
+		game_over_text := "Game Over! Press Esc/B"
+		k2.draw_text(game_over_text, {0, 0}, 32, k2.BLACK, _font)
+		final_score_text := fmt.tprintf("Score: %d", _score)
+		k2.draw_text(final_score_text, {64, 32}, 32, k2.WHITE, _font)
+	} else {
+		score_text := fmt.tprintf("%06d", _score)
+		level_text := fmt.tprintf("LV:%02d", _player.level)
+		wave_text := fmt.tprintf("D:%02d", _diff)
 
-	k2.draw_text(score_text, {0, 0}, 32, k2.BLACK, _font)
-	k2.draw_text(level_text, {7 * 32, 0}, 32, k2.BLACK, _font)
-	k2.draw_text(wave_text, {13 * 32, 0}, 32, k2.BLACK, _font)
+		k2.draw_text(score_text, {0, 0}, 32, k2.BLACK, _font)
+		k2.draw_text(level_text, {7 * 32, 0}, 32, k2.BLACK, _font)
+		k2.draw_text(wave_text, {13 * 32, 0}, 32, k2.BLACK, _font)
 
-	for bonus_rune, i in Rune {
-		if bonus_rune in _bonus_runes {
-			src := _frames[Bonus_Rune_Frame[bonus_rune]]
-			dest := k2.Rect{f32((i + 17) * 32), 0, 32, 32}
-			k2.draw_texture_fit(_tex, src, dest)
+		for bonus_rune, i in Rune {
+			if bonus_rune in _bonus_runes {
+				src := _frames[Bonus_Rune_Frame[bonus_rune]]
+				dest := k2.Rect{f32((i + 17) * 32), 0, 32, 32}
+				k2.draw_texture_fit(_tex, src, dest)
+			}
 		}
 	}
 }
