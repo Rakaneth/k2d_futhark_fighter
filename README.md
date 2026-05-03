@@ -9,7 +9,7 @@
 * Esc/XBox B/PS O = restart on game over
 
 # Building:
-Requires latest (https://odin-lang.org)[Odin] compiler.
+Requires latest [Odin](https://odin-lang.org) compiler.
 
 ## Windows:
 `.\build.ps1 debug` - makes a debug desktop build
