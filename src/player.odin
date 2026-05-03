@@ -33,9 +33,8 @@ player_update :: proc(player: ^Player, dt: f32) {
 		player.frame_timer -= FRAME_CD
 		player.frame = (player.frame + 1) % 2
 	}
-	player.pos += player.dir * dt * GAME_UNIT * (player.spd + (0.1 * f32(player.level)))
+	player.pos += player.dir * dt * GAME_UNIT * (player.spd + 2 * f32(player.level))
 	hb := player_hitbox(player^)
-
 
 	if hb.x + hb.w >= RIGHT_EDGE {
 		player.pos.x = RIGHT_EDGE - hb.w
@@ -57,7 +56,7 @@ player_update :: proc(player: ^Player, dt: f32) {
 player_shoot :: proc(player: ^Player) {
 	for &bullet in player.bullet_pool {
 		if !bullet.active {
-			bullet_init(&bullet, player.pos, BULLET_BASE_SPD + (f32(player.level) * 0.5))
+			bullet_init(&bullet, player.pos, BULLET_BASE_SPD + 2 * f32(player.level))
 			bullet.active = true
 			k2.play_sound(_player_shot_sound)
 			break

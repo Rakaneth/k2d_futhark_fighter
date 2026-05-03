@@ -23,6 +23,7 @@ Enemy :: struct {
 	active: bool,
 	t:      f32,
 	horz:   bool,
+	e_rune: Rune,
 }
 
 @(rodata)
@@ -36,11 +37,13 @@ Enemy_Frames := [Rune]int {
 }
 
 
-enemy_init :: proc(enemy: ^Enemy, enemy_rune: Rune, horz: bool) {
+enemy_init :: proc(enemy: ^Enemy, enemy_rune: Rune, horz: bool, diff: int) {
 	enemy.frame = Enemy_Frames[enemy_rune]
 	enemy.spd = ENEMY_START_SPD
 	enemy.dir = {0, 1}
 	enemy.horz = horz
+	enemy.spd = ENEMY_START_SPD + (f32(diff) * 0.1)
+	enemy.e_rune = enemy_rune
 }
 
 enemy_hitbox :: proc(enemy: Enemy) -> k2.Rect {

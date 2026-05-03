@@ -18,6 +18,8 @@ TITLE :: "Futhark Fighter!"
 NUM_FRAMES :: 18
 GAME_UNIT :: 8
 GAMEPAD_DEADZONE :: 0.4
+ENEMY_SPAWN_BASE_CD :: 2.0
+DIFF_INCREASE_BASE_CD :: 5.0
 
 @(rodata)
 LEFT_EDGE := f32(-WORLD_W / 2)
@@ -58,6 +60,8 @@ _bonus_runes: bit_set[Rune] = {}
 _game_over: bool
 _timers: hm.Dynamic_Handle_Map(Timer, Timer_Handle)
 _debug_mode := false
+_e_timer: Timer_Handle
+_diff_timer: Timer_Handle
 
 init :: proc() {
 	k2.init(SCR_W, SCR_H, TITLE)
@@ -85,8 +89,10 @@ init :: proc() {
 
 	player_init(&_player)
 
-	e_timer := add_timer(5.0, spawn_enemy, true)
-	timer_start(hm.get(&_timers, e_timer))
+	_e_timer = add_timer(ENEMY_SPAWN_BASE_CD, spawn_enemy, true)
+	_diff_timer = add_timer(DIFF_INCREASE_BASE_CD, increase_diff, true)
+	timer_start(hm.get(&_timers, _e_timer))
+	timer_start(hm.get(&_timers, _diff_timer))
 	spawn_enemy()
 
 	k2.set_sound_loop(_music, true)
@@ -97,7 +103,14 @@ reset_game :: proc() {
 	_score = 0
 	_diff = 1
 	_player.level = 0
+
 	player_init(&_player)
+}
+
+increase_diff :: proc() {
+	_diff += 1
+	e_timer := hm.get(&_timers, _e_timer)
+	e_timer.duration = ENEMY_SPAWN_BASE_CD / (1 + f32(_diff) * 0.1)
 }
 
 input :: proc() {
@@ -164,11 +177,22 @@ add_timer :: proc(duration: f32, fn: proc(), infinite := false, num_loops := 1) 
 	return ha
 }
 
+check_bonus_runes :: proc() {
+	for rn in Rune {
+		if rn not_in _bonus_runes {
+			return
+		}
+	}
+	_bonus_runes = {}
+	_player.level += 1
+	_score += _player.level * 1000
+}
+
 spawn_enemy :: proc() {
 	for &enemy in _enemies {
 		if !enemy.active {
 			rn := rand.choice_enum(Rune)
-			enemy_init(&enemy, rn, rand.int_max(2) == 1)
+			enemy_init(&enemy, rn, rand.int_max(2) == 1, _diff)
 			enemy.active = true
 			if enemy.horz {
 				enemy.pos.y = rand.float32_range(TOP_EDGE, BOT_EDGE)
@@ -202,6 +226,8 @@ update :: proc() {
 					bullet.active = false
 					k2.play_sound(_explode_sound)
 					_score += 10 * _diff
+					_bonus_runes += {enemy.e_rune}
+					check_bonus_runes()
 				}
 			}
 		}
