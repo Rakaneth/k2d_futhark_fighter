@@ -4,6 +4,7 @@ import k2 "../vendor/karl2d"
 
 FRAME_CD :: 15
 PLAYER_START_SPD :: 5
+BULLET_BASE_SPD :: 10
 
 Player :: struct {
 	pos:         k2.Vec2,
@@ -11,6 +12,8 @@ Player :: struct {
 	spd:         f32,
 	frame:       int,
 	frame_timer: int,
+	level:       int,
+	bullet_pool: [4]Bullet,
 }
 
 player_init :: proc(player: ^Player) {
@@ -30,7 +33,7 @@ player_update :: proc(player: ^Player, dt: f32) {
 		player.frame_timer -= FRAME_CD
 		player.frame = (player.frame + 1) % 2
 	}
-	player.pos += player.dir * dt * GAME_UNIT * player.spd
+	player.pos += player.dir * dt * GAME_UNIT * (player.spd + (0.1 * f32(player.level)))
 	hb := player_hitbox(player^)
 
 
@@ -48,5 +51,16 @@ player_update :: proc(player: ^Player, dt: f32) {
 
 	if hb.y < TOP_EDGE {
 		player.pos.y = TOP_EDGE
+	}
+}
+
+player_shoot :: proc(player: ^Player) {
+	for &bullet in player.bullet_pool {
+		if !bullet.active {
+			bullet_init(&bullet, player.pos, BULLET_BASE_SPD + (f32(player.level) * 0.5))
+			bullet.active = true
+			k2.play_sound(_player_shot_sound)
+			break
+		}
 	}
 }

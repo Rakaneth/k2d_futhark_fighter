@@ -54,7 +54,6 @@ _player: Player
 _enemies: [10]Enemy
 _score := 0
 _diff := 1
-_level := 0
 _bonus_runes: bit_set[Rune] = {}
 _game_over: bool
 _timers: hm.Dynamic_Handle_Map(Timer, Timer_Handle)
@@ -96,7 +95,8 @@ init :: proc() {
 reset_game :: proc() {
 	_score = 0
 	_diff = 1
-	_level = 0
+	_player.level = 0
+	player_init(&_player)
 }
 
 input :: proc() {
@@ -142,6 +142,10 @@ input :: proc() {
 	}
 
 	_player.dir = linalg.normalize0(axis)
+
+	if k2.key_went_down(.Space) || k2.gamepad_button_went_down(0, .Right_Face_Down) {
+		player_shoot(&_player)
+	}
 }
 
 add_timer :: proc(duration: f32, fn: proc(), infinite := false, num_loops := 1) -> Timer_Handle {
@@ -183,6 +187,9 @@ update :: proc() {
 	for &enemy in _enemies {
 		enemy_update(&enemy, dt)
 	}
+	for &bullet in _player.bullet_pool {
+		bullet_update(&bullet, dt)
+	}
 }
 
 draw_player :: proc() {
@@ -202,7 +209,16 @@ draw_enemies :: proc() {
 	}
 }
 
-draw_bullets :: proc() {}
+draw_bullets :: proc() {
+	for bullet in _player.bullet_pool {
+		if !bullet.active {
+			continue
+		}
+		src := _frames[2]
+		dest := k2.Rect{bullet.pos.x, bullet.pos.y, GAME_UNIT, GAME_UNIT}
+		k2.draw_texture_fit(_tex, src, dest)
+	}
+}
 
 draw_game :: proc() {
 	k2.set_camera(_cam)
@@ -215,7 +231,7 @@ draw_hud :: proc() {
 	k2.set_camera(nil)
 	k2.draw_rect({0, 0, SCR_W, 32}, {192, 192, 192, 255})
 	score_text := fmt.tprintf("%06d", _score)
-	level_text := fmt.tprintf("LV:%02d", _level)
+	level_text := fmt.tprintf("LV:%02d", _player.level)
 	wave_text := fmt.tprintf("D:%02d", _diff)
 
 	k2.draw_text(score_text, {0, 0}, 32, k2.BLACK, _font)
