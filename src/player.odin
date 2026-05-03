@@ -3,7 +3,7 @@ package main
 import k2 "../vendor/karl2d"
 
 FRAME_CD :: 15
-PLAYER_START_SPD :: 6
+PLAYER_START_SPD :: 5
 
 Player :: struct {
 	pos:         k2.Vec2,

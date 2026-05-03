@@ -4,6 +4,7 @@ import k2 "../vendor/karl2d"
 import "core:fmt"
 import "core:math"
 import "core:math/linalg"
+import "core:math/rand"
 import "core:mem"
 
 SCR_W :: 800
@@ -13,15 +14,30 @@ WORLD_H :: 108
 TITLE :: "Futhark Fighter!"
 NUM_FRAMES :: 18
 GAME_UNIT :: 8
+GAMEPAD_DEADZONE :: 0.4
+
 @(rodata)
 LEFT_EDGE := f32(-WORLD_W / 2)
+
 @(rodata)
 RIGHT_EDGE := f32(WORLD_W / 2)
+
 @(rodata)
 TOP_EDGE := f32(-WORLD_H / 2) + 8.0
+
 @(rodata)
 BOT_EDGE := f32(WORLD_H / 2)
-GAMEPAD_DEADZONE :: 0.4
+
+@(rodata)
+Bonus_Rune_Frame := [Rune]int {
+	.F  = 12,
+	.U  = 13,
+	.TH = 14,
+	.A  = 15,
+	.R  = 16,
+	.K  = 17,
+}
+
 
 _cam: k2.Camera
 _tex: k2.Texture
@@ -32,6 +48,11 @@ _player_shot_sound: k2.Sound
 _music: k2.Sound
 _font: k2.Font
 _player: Player
+_enemies: [10]Enemy
+_score: int
+_wave := 1
+_level := 0
+_bonus_runes: bit_set[Rune] = {.F, .U, .A, .R, .K}
 
 
 init :: proc() {
@@ -59,6 +80,15 @@ init :: proc() {
 	_font = k2.load_font_from_bytes(#load("../assets/PressStart2P-Regular.ttf"))
 
 	player_init(&_player)
+
+	for &enemy in _enemies {
+		rn := rand.choice_enum(Rune)
+		enemy_init(&enemy, rn)
+	}
+
+	_enemies[0].active = true
+	_enemies[0].pos.x = f32(rand.int_range(-72, 64))
+	_enemies[0].pos.y = TOP_EDGE
 
 	k2.set_sound_loop(_music, true)
 	k2.play_sound(_music)
@@ -101,6 +131,9 @@ input :: proc() {
 update :: proc() {
 	dt := k2.get_frame_time()
 	player_update(&_player, dt)
+	for &enemy in _enemies {
+		enemy_update(&enemy, dt)
+	}
 }
 
 draw_player :: proc() {
@@ -109,16 +142,46 @@ draw_player :: proc() {
 	k2.draw_texture_fit(_tex, src, dest)
 }
 
+draw_enemies :: proc() {
+	for enemy in _enemies {
+		if !enemy.active {
+			continue
+		}
+		src := _frames[enemy.frame]
+		dest := enemy_hitbox(enemy)
+		k2.draw_texture_fit(_tex, src, dest)
+	}
+}
+
+draw_bullets :: proc() {}
+
 draw_game :: proc() {
 	k2.set_camera(_cam)
 	draw_player()
+	draw_bullets()
+	draw_enemies()
 }
 
 draw_hud :: proc() {
 	k2.set_camera(nil)
 	k2.draw_rect({0, 0, SCR_W, 32}, {192, 192, 192, 255})
-	k2.draw_text("HUD Text", {0, 0}, 32, k2.BLACK, _font)
+	score_text := fmt.tprintf("%06d", _score)
+	level_text := fmt.tprintf("LV:%02d", _level)
+	wave_text := fmt.tprintf("W:%02d", _wave)
+
+	k2.draw_text(score_text, {0, 0}, 32, k2.BLACK, _font)
+	k2.draw_text(level_text, {7 * 32, 0}, 32, k2.BLACK, _font)
+	k2.draw_text(wave_text, {13 * 32, 0}, 32, k2.BLACK, _font)
+
+	for bonus_rune, i in Rune {
+		if bonus_rune in _bonus_runes {
+			src := _frames[Bonus_Rune_Frame[bonus_rune]]
+			dest := k2.Rect{f32((i + 17) * 32), 0, 32, 32}
+			k2.draw_texture_fit(_tex, src, dest)
+		}
+	}
 }
+
 
 draw :: proc() {
 	k2.clear(k2.BLACK)
@@ -135,6 +198,8 @@ step :: proc() -> bool {
 	input()
 	update()
 	draw()
+
+	free_all(context.temp_allocator)
 
 	return true
 }
