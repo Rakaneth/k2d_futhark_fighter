@@ -1,11 +1,14 @@
 package main
 
 import k2 "../vendor/karl2d"
+import hm "core:container/handle_map"
 import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 import "core:math/rand"
 import "core:mem"
+
+Timer_Handle :: hm.Handle16
 
 SCR_W :: 800
 SCR_H :: 600
@@ -54,6 +57,7 @@ _wave := 1
 _level := 0
 _bonus_runes: bit_set[Rune] = {.F, .U, .A, .R, .K}
 _game_over: bool
+_timers: hm.Dynamic_Handle_Map(Timer, Timer_Handle)
 
 init :: proc() {
 	k2.init(SCR_W, SCR_H, TITLE)
@@ -81,18 +85,12 @@ init :: proc() {
 
 	player_init(&_player)
 
-	for &enemy in _enemies {
-		rn := rand.choice_enum(Rune)
-		enemy_init(&enemy, rn, rand.int_max(2) == 1)
-	}
-
-	_enemies[0].active = true
-	_enemies[0].pos.x = f32(rand.int_range(-72, 64))
-	_enemies[0].pos.y = TOP_EDGE
+	e_timer := add_timer(5.0, spawn_enemy, true)
+	timer_start(hm.get(&_timers, e_timer))
+	spawn_enemy()
 
 	k2.set_sound_loop(_music, true)
 	k2.play_sound(_music)
-
 }
 
 reset_game :: proc() {
@@ -134,8 +132,41 @@ input :: proc() {
 	_player.dir = linalg.normalize0(axis)
 }
 
+add_timer :: proc(duration: f32, fn: proc(), infinite := false, num_loops := 1) -> Timer_Handle {
+	t := Timer {
+		duration  = duration,
+		num_loops = num_loops,
+		infinite  = infinite,
+		fn        = fn,
+	}
+	ha := hm.add(&_timers, t)
+	return ha
+}
+
+spawn_enemy :: proc() {
+	for &enemy in _enemies {
+		if !enemy.active {
+			rn := rand.choice_enum(Rune)
+			enemy_init(&enemy, rn, rand.int_max(2) == 1)
+			enemy.active = true
+			if enemy.horz {
+				enemy.pos.y = rand.float32_range(TOP_EDGE, BOT_EDGE)
+				enemy.pos.x = LEFT_EDGE
+			} else {
+				enemy.pos.x = rand.float32_range(LEFT_EDGE, RIGHT_EDGE)
+				enemy.pos.y = TOP_EDGE
+			}
+			break
+		}
+	}
+}
+
 update :: proc() {
 	dt := k2.get_frame_time()
+	it := hm.iterator_make(&_timers)
+	for timer, handle in hm.iterate(&it) {
+		timer_update(timer, dt)
+	}
 	player_update(&_player, dt)
 	for &enemy in _enemies {
 		enemy_update(&enemy, dt)
@@ -211,6 +242,7 @@ step :: proc() -> bool {
 }
 
 shutdown :: proc() {
+	hm.dynamic_destroy(&_timers)
 	k2.destroy_font(_font)
 	if k2.sound_is_playing(_music) {
 		k2.stop_sound(_music)
