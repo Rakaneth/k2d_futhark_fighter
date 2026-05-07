@@ -1,6 +1,7 @@
+#!/bin/env bash
 DBG=./out/Debug
 RLS=./out/Release
-EXE=masterstower #change this to match name
+EXE=futhark_fighter
 RENDERER="-define:KARL2D_RENDER_BACKEND=gl"
 OSIZE="-o:size"
 
